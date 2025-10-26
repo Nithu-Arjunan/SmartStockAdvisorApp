@@ -1,0 +1,35 @@
+[project]
+name = "smartstockadvisor"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "cloudpickle==3.1.1",
+    "datetime>=5.5",
+    "deprecated>=1.2.18",
+    "fastapi>=0.117.1",
+    "google-adk>=0.0.1",
+    "google-auth>=2.40.3",
+    "google-auth-httplib2>=0.2.0",
+    "google-auth-oauthlib>=1.2.2",
+    "google-cloud-aiplatform==1.116.0",
+    "google-cloud-bigquery>=3.38.0",
+    "google-cloud-storage==2.18.2",
+    "google-genai==1.37.0",
+    "ipython>=9.5.0",
+    "jugaad-data>=0.27",
+    "matplotlib>=3.10.6",
+    "numpy>=2.3.3",
+    "overrides>=7.7.0",
+    "pandas>=2.3.2",
+    "pdfplumber>=0.11.7",
+    "pydantic==2.11.0",
+    "pysqlite3-binary>=0.5.4",
+    "pytest>=8.4.2",
+    "python-dotenv>=1.1.1",
+    "reportlab>=4.4.4",
+    "reportlib>=3.4.0",
+    "scikit-learn>=1.7.2",
+    "uvicorn>=0.37.0",
+]

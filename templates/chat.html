@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Agent Chat</title>
+  <link rel="stylesheet" href="/static/style.css">
+
+<body>
+  <div class="chat-page">
+    <!-- Navigation -->
+    <nav class="chat-nav">
+      <ul>
+        <li class="active"><a href="#chat-tab">Chat</a></li>
+        <li><a href="#resources">Resources</a></li>
+        <li><a href="#login">Login</a></li>
+        <li><a href="#settings">Settings</a></li>
+      </ul>
+    </nav>
+
+    
+
+    <!-- Chat Tab -->
+    <div id="chat-tab" class="tab-content active">
+      <div id="chat-box"></div>
+      <div id="typing-indicator" class="hidden">Agent is typing...</div>
+      <div class="input-container">
+        <input type="text" id="user-input" placeholder="Type your message...">
+        <button id="send-button">Send</button>
+      </div>
+    </div>
+
+    <!-- Resources Tab Content -->
+    <div id="resources" class="tab-content">
+      <h2 style="margin-bottom: 1rem;">Resources</h2>
+
+      <div class="resource-container">
+        <div class="resource-card">
+        
+          <h3>NSE India</h3>
+          <p>Get live stock prices, indices, and financial news from the National Stock Exchange.</p>
+          <a href="https://www.nseindia.com/" target="_blank">Visit Site</a>
+        </div>
+
+        <div class="resource-card">
+    
+          <h3>BSE India</h3>
+          <p>Explore stock performance and corporate updates from the Bombay Stock Exchange.</p>
+          <a href="https://www.bseindia.com/" target="_blank">Visit Site</a>
+        </div>
+
+        <div class="resource-card">
+          <h3>ET Now</h3>
+          <p>Follow market news, stock analysis, and investment tips.</p>
+          <a href="https://www.etnownews.com/live-tv" target="_blank">Visit Site</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Login Tab -->
+    <div id="login" class="tab-content">
+      <div class="form-container"> 
+      <h2>Login</h2>
+      <form id="login-form" class="login-form">
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="Enter your username" required />
+        
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter your password" required />
+
+        <button type="submit">Login</button>
+        <p class="login-note">OAuth login options (Google / GitHub) coming soon!</p>
+      </form>
+      </div>
+    </div>
+
+
+    <div id="settings-tab" class="tab-content">
+      <div class="form-container">
+        
+        <label for="theme">Theme</label>
+        <select id="theme">
+          <option value="blue" selected>Blue</option>
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+        </select>
+
+        <label for="font-size">Font Size</label>
+        <input type="number" id="font-size" placeholder="Enter font size" min="10" max="30">
+
+        <button type="submit">Save Settings</button>
+      </div>
+    </div>
+
+    
+  <script>
+    // Tab switching
+    const tabs = document.querySelectorAll('.chat-nav ul li');
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        tabContents.forEach(c => c.classList.remove('active'));
+        tabContents[index].classList.add('active');
+      });
+    });
+
+    // Chat Logic
+    let session_id = "{{ session_id }}" || null;
+    const username = "{{ username }}" || "You";
+    const chatBox = document.getElementById("chat-box");
+    const input = document.getElementById("user-input");
+    const typingIndicator = document.getElementById("typing-indicator");
+
+    async function sendMessage() {
+      const message = input.value.trim();
+      if (!message) return;
+
+      // User message
+      const userMsg = document.createElement("div");
+      const userLabel = document.createElement("div");
+      userLabel.className = "msg-label";
+      userLabel.textContent = "You";
+      userMsg.className = "user-msg";
+      userMsg.textContent = message;
+      chatBox.appendChild(userLabel);
+      chatBox.appendChild(userMsg);
+      input.value = "";
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      typingIndicator.classList.remove("hidden");
+
+      try {
+        const response = await fetch("/chat/stream", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_input: message, user_id: username, session_id: session_id })
+        });
+
+        if (!response.ok) throw new Error("Network response not ok");
+        const data = await response.json();
+        session_id = data.session_id || session_id;
+
+        // Bot message
+        const botLabel = document.createElement("div");
+        botLabel.className = "msg-label";
+        botLabel.textContent = "Agent";
+
+        const botMsg = document.createElement("div");
+        botMsg.className = "bot-msg";
+        /*botMsg.innerHTML = (data.response || "No response").replace(/\n/g,"<br>");*/
+        const agentText = (data.response || "No response");
+
+         // Detect URL (either from data.report_url OR inside response text)
+        let reportUrl = data.report_url;
+        if (!reportUrl) {
+          const urlMatch = agentText.match(/https:\/\/[^\s]+\.pdf/);
+          if (urlMatch) reportUrl = urlMatch[0];
+        }
+
+        // Render message (replace newlines with <br>)
+        let formattedText = agentText.replace(/(https:\/\/[^\s]+)/g,
+        '<a href="$1" target="_blank" class="msg-link">$1</a>');
+        botMsg.innerHTML = formattedText.replace(/\n/g, "<br>");
+
+        // if (reportUrl)if (reportUrl && reportUrl.trim() !== ""){
+        //   console.log("Report URL detected:", data.report_url);
+        //   const downloadBtn = document.createElement("a");
+        //   downloadBtn.href = data.report_url;
+        //   downloadBtn.innerText = "Download Report";
+        //   downloadBtn.download = "";
+        //   downloadBtn.target = "_blank";
+        //   downloadBtn.classList.add("download-btn");
+
+        //   // Force download when clicked
+        //   downloadBtn.addEventListener("click", (e) => {
+        //     e.preventDefault();
+        //     const link = document.createElement("a");
+        //     link.href = reportUrl + "?download=1"; // force download param
+        //     link.download = reportUrl.split("/").pop(); // extract filename
+        //     document.body.appendChild(link);
+        //     link.click();
+        //     document.body.removeChild(link);
+        //   });
+
+        //   botMsg.appendChild(document.createElement("br"));
+        //   botMsg.appendChild(downloadBtn);
+        // }
+
+        chatBox.appendChild(botLabel);
+        chatBox.appendChild(botMsg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+      } catch(err){
+        const errMsg = document.createElement("div");
+        errMsg.className="bot-msg";
+        errMsg.textContent="⚠️ Error getting response.";
+        chatBox.appendChild(errMsg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        console.error(err);
+      } finally { typingIndicator.classList.add("hidden"); }
+    }
+
+    input.addEventListener("keypress", e => { if(e.key==="Enter") sendMessage(); });
+    document.getElementById("send-button").addEventListener("click", sendMessage);
+
+    document.getElementById("save-settings").addEventListener("click", () => {
+      const theme = document.getElementById("theme-select").value;
+      const fontSize = document.getElementById("font-size").value;
+      localStorage.setItem("theme", theme);
+      localStorage.setItem("fontSize", fontSize);
+      alert("Settings saved!");
+    });
+
+  </script>
+</body>
+</html>
+
+
